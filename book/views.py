@@ -6,7 +6,7 @@ from rest_framework.decorators import api_view
 from rest_framework.filters import SearchFilter
 from rest_framework.generics import ListAPIView, RetrieveUpdateDestroyAPIView, CreateAPIView, RetrieveUpdateAPIView, \
     GenericAPIView
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from rest_framework.viewsets import GenericViewSet
@@ -14,6 +14,7 @@ from rest_framework.mixins import UpdateModelMixin
 from .custompermissions import IsAdminOrReadOnly
 from .models import Book
 from .serializers import *
+from .custompaginations import CustomPagination
 
 
 class CategoryCreateView(CreateAPIView):
@@ -37,7 +38,8 @@ class BookListView(ListAPIView):
     filter_backends = (DjangoFilterBackend, SearchFilter)
     filterset_fields = ('category', 'name', 'author_name')
     search_fields = ('category__name', 'name', 'author_name')
-
+    pagination_class = CustomPagination
+    permission_classes = [AllowAny, ]
 
 class BookDetailView(RetrieveUpdateDestroyAPIView):
     queryset = Book.objects.all().annotate(rating=Avg('userbookrelation__rate')
