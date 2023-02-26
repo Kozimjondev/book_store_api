@@ -23,8 +23,8 @@ class LoginView(APIView):
     def post(self, request):
         if 'email' not in request.data or 'password' not in request.data:
             return Response({'msg': 'Credentials missing'}, status=status.HTTP_400_BAD_REQUEST)
-        email = request.POST['email']
-        password = request.POST['password']
+        email = request.data.get('email')
+        password = request.data.get('password')
         user = authenticate(request, email=email, password=password)
         if user is not None:
             login(request, user)

@@ -16,7 +16,7 @@ class BookListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Book
-        fields = ['name', 'photo', 'price', 'author_name', 'likes_count', 'rating']
+        fields = ['name', 'photo', 'price', 'author_name', 'likes_count', 'rating', 'url']
 
     def get_likes_count(self, instance):
         return UserBookRelation.objects.filter(book=instance, like=True).count()

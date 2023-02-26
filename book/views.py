@@ -89,12 +89,17 @@ class BookListView(ListAPIView):
     pagination_class = CustomPagination
     permission_classes = [AllowAny, ]
 
+
 class BookDetailView(RetrieveUpdateDestroyAPIView):
     queryset = Book.objects.all().annotate(rating=Avg('userbookrelation__rate')
                                            ).select_related('owner').order_by('id')
     serializer_class = BookDetailSerializer
     lookup_field = 'url'
     permission_classes = [IsAdminOrReadOnly, ]
+    
+    def retrieve(self, request, *args, **kwargs):
+        print('sothing')
+        return super().retrieve(request, *args, **kwargs)
 
 
 # class UserBookRelationView(RetrieveUpdateAPIView):
