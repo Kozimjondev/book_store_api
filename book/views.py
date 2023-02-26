@@ -5,30 +5,78 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.filters import SearchFilter
 from rest_framework.generics import ListAPIView, RetrieveUpdateDestroyAPIView, CreateAPIView, RetrieveUpdateAPIView, \
-    GenericAPIView
+    GenericAPIView, UpdateAPIView
 from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from rest_framework.viewsets import GenericViewSet
-from rest_framework.mixins import UpdateModelMixin
+from rest_framework.mixins import UpdateModelMixin, DestroyModelMixin, RetrieveModelMixin, CreateModelMixin
 from .custompermissions import IsAdminOrReadOnly
 from .models import Book
 from .serializers import *
 from .custompaginations import CustomPagination
 
 
-class CategoryCreateView(CreateAPIView):
+# class CategoryUpdateAPIView(UpdateAPIView):
+#     serializer_class = CategoryCreateSerializer
+#     queryset = Category.objects.all()
+#     lookup_field = 'url'
+#     permission_classes = [IsAdminUser, ]
+
+
+class CategoryCreateView(GenericAPIView):
     serializer_class = CategoryCreateSerializer
     permission_classes = [IsAdminUser, ]
+    lookup_field = 'url'
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request, *args, **kwargs):
+        url = kwargs.get('url', None)
+        if not url:
+            return Response({'error': 'Method PUT is not allowed'})
+        try:
+            book = Category.objects.get(url=url)
+        except:
+            return Response({'error': 'Object does not exists'})
+        serializer = self.serializer_class(book, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-class BookCreateView(CreateAPIView):
+class BookCreateView(GenericAPIView):
     permission_classes = [IsAdminUser, ]
     serializer_class = BookCreateSerializer
 
     def perform_create(self, serializer):
         serializer.validated_data['owner'] = self.request.user
         serializer.save()
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request, *args, **kwargs):
+        url = kwargs.get('url', None)
+        if not url:
+            return Response({'error': 'Method PUT is not allowed'})
+        try:
+            book = Book.objects.get(url=url)
+        except:
+            return Response({'error': 'Object does not exists'})
+        serializer = self.serializer_class(book, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class BookListView(ListAPIView):
@@ -114,22 +162,23 @@ class BookDetailView(RetrieveUpdateDestroyAPIView):
 #             return Response(serializer.data)
 #         return Response(serializer.errors)
 
-class UserBookRateAPIView(UpdateModelMixin, GenericViewSet):
+class UserBookRateAPIView(RetrieveModelMixin,
+                          DestroyModelMixin,
+                          UpdateModelMixin,
+                          GenericViewSet,
+                          ):
     permission_classes = [IsAuthenticated]
     queryset = UserBookRelation.objects.all()
     serializer_class = UserBookRelationSerializer
     lookup_field = 'book__url'
 
-    # def perform_update(self, serializer):
-    #     serializer.validated_data['owner'] = self.request.user
-    #     serializer.save()
-
     def get_object(self):
+        book = Book.objects.get_or_create(url=self.kwargs['url'])
+        # print((book))
         obj, _ = UserBookRelation.objects.get_or_create(user=self.request.user,
-                                                        book__url=self.kwargs['book__url'])
+                                                        book=book)
+        # print(obj)
         return obj
-
-
 
 
 def pageNotFound(request, exception):
