@@ -1,5 +1,5 @@
 from django.db.models import Count, Case, When, Avg
-from django.http import HttpResponseNotFound
+from django.http import HttpResponseNotFound, Http404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -98,7 +98,7 @@ class BookDetailView(RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAdminOrReadOnly, ]
     
     def retrieve(self, request, *args, **kwargs):
-        print('sothing')
+        print('something')
         return super().retrieve(request, *args, **kwargs)
 
 
@@ -178,12 +178,25 @@ class UserBookRateAPIView(RetrieveModelMixin,
     lookup_field = 'book__url'
 
     def get_object(self):
-        book = Book.objects.get_or_create(url=self.kwargs['url'])
-        # print((book))
+        try:
+            book = Book.objects.get(url=self.kwargs['book__url'])
+        except:
+            return Http404()
         obj, _ = UserBookRelation.objects.get_or_create(user=self.request.user,
                                                         book=book)
-        # print(obj)
         return obj
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        try:
+            instance = self.get_object()
+        except:
+            return Http404()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+
 
 
 def pageNotFound(request, exception):
