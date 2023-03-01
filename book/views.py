@@ -90,7 +90,7 @@ class BookListView(ListAPIView):
     pagination_class = CustomPagination
     permission_classes = [AllowAny, ]
     ordering_fields = ['price', 'likes_count', 'rating']
-    ordering = ('-rating', )
+    ordering = ('-rating', '-likes_count')
 
 
 class BookDetailView(RetrieveUpdateDestroyAPIView):
