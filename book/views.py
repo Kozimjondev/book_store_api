@@ -3,7 +3,7 @@ from django.http import HttpResponseNotFound, Http404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.decorators import api_view
-from rest_framework.filters import SearchFilter
+from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.generics import ListAPIView, RetrieveUpdateDestroyAPIView, CreateAPIView, RetrieveUpdateAPIView, \
     GenericAPIView, UpdateAPIView
 from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny
@@ -80,14 +80,17 @@ class BookCreateView(GenericAPIView):
 
 
 class BookListView(ListAPIView):
-    queryset = Book.objects.all().annotate(rating=Avg('userbookrelation__rate')
-                                           ).select_related('owner').order_by('id')
+    queryset = Book.objects.all().annotate(rating=Avg('userbookrelation__rate'),
+                                           likes_count=Count('userbookrelation__like')
+                                           ).select_related('owner').order_by('-id')
     serializer_class = BookListSerializer
-    filter_backends = (DjangoFilterBackend, SearchFilter)
-    filterset_fields = ('category', 'name', 'author_name')
-    search_fields = ('category__name', 'name', 'author_name')
+    filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
+    filterset_fields = ('category', 'name', 'author_name', 'price')
+    search_fields = ('category__name', 'name', 'author_name', 'price')
     pagination_class = CustomPagination
     permission_classes = [AllowAny, ]
+    ordering_fields = ['price', 'likes_count', 'rating']
+    ordering = ('-rating', )
 
 
 class BookDetailView(RetrieveUpdateDestroyAPIView):
@@ -96,6 +99,11 @@ class BookDetailView(RetrieveUpdateDestroyAPIView):
     serializer_class = BookDetailSerializer
     lookup_field = 'url'
     permission_classes = [IsAdminOrReadOnly, ]
+
+    def get_serializer_class(self):
+        if self.request.user.is_superuser:
+            return BookAdminDetailSerializer
+        return BookDetailSerializer
     
     def retrieve(self, request, *args, **kwargs):
         print('something')
@@ -195,8 +203,6 @@ class UserBookRateAPIView(RetrieveModelMixin,
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
-
-
 
 
 def pageNotFound(request, exception):
