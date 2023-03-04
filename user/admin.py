@@ -6,4 +6,5 @@ from .models import CustomUser
 class CustomUserAdmin(admin.ModelAdmin):
     list_display = ['email', 'first_name', 'last_name', 'phone_number']
     list_display_links = ['email', ]
+    save_on_top = True
 

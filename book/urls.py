@@ -13,10 +13,13 @@ urlpatterns = [
     path('create/', BookCreateView.as_view(), name='book-create'),
     path('create/<slug:url>/', BookCreateView.as_view(), name='book-update'),
     re_path('', include(router.urls), name='rate-update'),
+    path('admin-dashboard', admin_dashboard, name='admin-dashboard'),
+    path('admin-detail/<int:pk>', admin_detail, name='admin-detail'),
     # path('user-rate/<int:id>/', UserBookRateAPIView.as_view({'get': 'retrieve'}), name='rate-retrieve'),
     # path('user-rate/<int:id>/', UserBookRateAPIView.as_view({'put': 'update'}), name='rate-update'),
     # path('user-rate/<int:id>/', UserBookRateAPIView.as_view({'delete': 'destroy'}), name='rate-delete'),
     path('<slug:url>/', BookDetailView.as_view(), name='detail'),
+
 ]
 
 

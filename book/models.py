@@ -1,4 +1,6 @@
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.urls import reverse
 from django.template.defaultfilters import slugify
 from user.models import CustomUser
@@ -33,6 +35,7 @@ class Book(models.Model):
     url = models.SlugField(max_length=100, unique=True)
     category = models.ForeignKey(Category, on_delete=models.PROTECT, null=True, related_name='category')
     readers = models.ManyToManyField(CustomUser, through='UserBookRelation', related_name='readers')
+    # count_book = models.PositiveIntegerField(editable=False, default=0)
 
     def __str__(self):
         return self.name
@@ -64,3 +67,7 @@ class UserBookRelation(models.Model):
     def __str__(self):
         return f"{self.user}: {self.book}, rate: {self.rate}"
 
+
+# @receiver(post_save, sender=Book)
+# def book_count(sender,instance,created,**kwargs):
+#     if created:

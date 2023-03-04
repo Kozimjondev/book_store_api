@@ -1,8 +1,9 @@
-from django.db.models import Count, Case, When, Avg
-from django.http import HttpResponseNotFound, Http404
+from django.db.models import Count, Case, When, Avg, Max, Q, OuterRef
+import json
+from django.http import HttpResponseNotFound, Http404, HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.generics import ListAPIView, RetrieveUpdateDestroyAPIView, CreateAPIView, RetrieveUpdateAPIView, \
     GenericAPIView, UpdateAPIView
@@ -11,6 +12,8 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import UpdateModelMixin, DestroyModelMixin, RetrieveModelMixin, CreateModelMixin
+
+from user.models import CustomUser
 from .custompermissions import IsAdminOrReadOnly
 from .models import Book
 from .serializers import *
@@ -95,7 +98,7 @@ class BookListView(ListAPIView):
 
 class BookDetailView(RetrieveUpdateDestroyAPIView):
     queryset = Book.objects.all().annotate(rating=Avg('userbookrelation__rate')
-                                           ).select_related('owner').order_by('id')
+                                           ).select_related('owner')
     serializer_class = BookDetailSerializer
     lookup_field = 'url'
     permission_classes = [IsAdminOrReadOnly, ]
@@ -197,7 +200,7 @@ class UserBookRateAPIView(RetrieveModelMixin,
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
         try:
-            instance = self.get_object()
+            instance = self.get_object
         except:
             return Http404()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
@@ -207,4 +210,76 @@ class UserBookRateAPIView(RetrieveModelMixin,
 
 def pageNotFound(request, exception):
     return HttpResponseNotFound("<h1> Page not found! </h1>")
+
+
+@api_view(['GET'])
+@permission_classes([IsAdminUser, ])
+def admin_dashboard(request):
+
+    # A list of admins
+    admins = CustomUser.objects.filter(Q(is_superuser=True) | Q(is_staff=True)).values_list('email', flat=True)
+
+    # Number of books of each admin
+    count_books = Book.objects.all().values('owner__email').annotate(count=Count('id'))
+
+    # the best ten ranked books by users
+    books = Book.objects.all().annotate(rating=Avg('userbookrelation__rate'),
+                                        ).select_related('owner').values('name', 'owner__email', 'rating').order_by('-rating')[:10]
+
+    # books = Book.objects.filter().annotate(likes=Count('userbookrelation__like')).order_by('-likes')[:3]
+    data = {
+        'list of admins': admins,
+        'books of each admin': books,
+        'Each admin`s number of books': count_books
+    }
+    return Response(data, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAdminUser, ])
+def admin_detail(request, pk):
+    try:
+        admin = CustomUser.objects.get(pk=pk, is_superuser=True, is_staff=True)
+    except:
+        return Response({'message': 'The admin does not exist'}, status=status.HTTP_404_NOT_FOUND)
+
+    books = Book.objects.filter(owner=admin).annotate(likes=Count('userbookrelation__like')).order_by('-likes')[:3]
+
+    data = {
+        'The most liked books': books
+    }
+
+    return Response(data, status=status.HTTP_200_OK)
+
+# @api_view(['GET', 'PUT', 'DELETE'])
+# def tutorial_detail(request, pk):
+#     try:
+#         tutorial = Tutorial.objects.get(pk=pk)
+#     except Tutorial.DoesNotExist:
+#         return JsonResponse({'message': 'The tutorial does not exist'}, status=status.HTTP_404_NOT_FOUND)
+#
+#     if request.method == 'GET':
+#         tutorial_serializer = TutorialSerializer(tutorial)
+#         return JsonResponse(tutorial_serializer.data)
+#
+#     elif request.method == 'PUT':
+#         tutorial_data = JSONParser().parse(request)
+#         tutorial_serializer = TutorialSerializer(tutorial, data=tutorial_data)
+#         if tutorial_serializer.is_valid():
+#             tutorial_serializer.save()
+#             return JsonResponse(tutorial_serializer.data)
+#         return JsonResponse(tutorial_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#
+#     elif request.method == 'DELETE':
+#         tutorial.delete()
+#         return JsonResponse({'message': 'Tutorial was deleted successfully!'}, status=status.HTTP_204_NO_CONTENT)
+
+
+# @api_view(['GET'])
+# def tutorial_list_published(request):
+#     tutorials = Tutorial.objects.filter(published=True)
+#
+#     if request.method == 'GET':
+#         tutorials_serializer = TutorialSerializer(tutorials, many=True)
+#         return JsonResponse(tutorials_serializer.data, safe=False)
 
