@@ -1,3 +1,5 @@
+from django.db.models import Avg
+
 from .models import Book, Category, UserBookRelation
 from rest_framework import serializers
 
@@ -85,77 +87,21 @@ class UserBookRelationSerializer(serializers.ModelSerializer):
         read_only_fields = ('book', )
 
 
+class AdminDashboardSerializer(serializers.ModelSerializer):
+    likes = serializers.IntegerField(read_only=True)
+    rating = serializers.DecimalField(max_digits=3, decimal_places=2, read_only=True)
 
+    class Meta:
+        model = Book
+        fields = ['name', 'price', 'likes', 'rating']
 
-
-
-
-
-
-
-    # def update(self, instance, validated_data):
-    #     user = self.context['request'].user
-    #     if user.pk != instance.pk:
-    #         raise serializers.ValidationError({"authorize": "You dont have permission for this book."})
-    #     instance.book = validated_data['book']
-    #     instance.like = validated_data['like']
-    #     instance.rate = validated_data['rate']
-    #     instance.in_bookmarks = validated_data['in_bookmarks']
-    #     instance.save()
-    #     return instance
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    # def update(self, instance, validated_data):
-    #     user_data = validated_data.pop('user')
-    #     instance = super().update(instance, validated_data)
-    #     UserBookRelation.objects.filter(book__name=instance).update(**user_data)
-    #     return instance
-
-    # def update(self, instance, validated_data):
-    #     userprofile_serializer = self.fields['profile']
-    #     userprofile_instance = instance.userprofile
-    #     userprofile_data = validated_data.pop('userprofile', {})
-    #     userprofile_serializer.update(userprofile_instance, userprofile_data)
-    #     instance = super().update(instance, validated_data)
-    #     return instance
-
-    # def update(self, instance, validated_data):
-    #     user_data = validated_data.pop('user')
-    #     game_data = validated_data.pop('games')
-    #     username = self.data['user']['username']
-    #     user = User.objects.get(username=username)
-    #     print user
-    #     user_serializer = UserSerializer(data=user_data)
-    #     if user_serializer.is_valid():
-    #         user_serializer.update(user, user_data)
-    #     instance.save()
-    #     return instance
+    # def get_rating(self, instance):
+    #     # return Book.objects.all().annotate(Avg('userbookrelation__rate'))
+    #     # return UserBookRelation.objects.filter(book=instance).annotate(Avg('userbookrelation__rate'))
+    #
+    #     return Book.objects.filter(owner=instance).annotate(Avg('userbookrelation__rate'))
+    # def to_representation(self, instance):
+    #     representation = super().to_representation(instance)
+    #     representation['owner__rate'] = instance.rate.Avg()
+    #
+    #     return representation
