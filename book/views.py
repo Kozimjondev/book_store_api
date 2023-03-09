@@ -7,6 +7,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.generics import ListAPIView, RetrieveUpdateDestroyAPIView, CreateAPIView, RetrieveUpdateAPIView, \
     GenericAPIView, UpdateAPIView
+from rest_framework.pagination import LimitOffsetPagination, PageNumberPagination
 from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
@@ -18,6 +19,7 @@ from .custompermissions import IsAdminOrReadOnly
 from .models import Book
 from .serializers import *
 from .custompaginations import CustomPagination
+# from ninja.pagination import paginate, LimitOffsetPagination, PageNumberPagination
 
 
 # class CategoryUpdateAPIView(UpdateAPIView):
@@ -180,8 +182,9 @@ def admin_dashboard(request):
 
 @api_view(['GET'])
 @permission_classes([IsAdminUser, ])
-
-def admin_detail(request, pk):
+# @pagination_classes(CustomPagination)
+# @paginate(PageNumberPagination, page_size=2)
+def admin_detail(request, pk, self=None):
     try:
         admin = CustomUser.objects.filter(Q(is_superuser=True) | Q(is_staff=True)).get(pk=pk)
     except:
@@ -189,9 +192,14 @@ def admin_detail(request, pk):
 
     books = Book.objects.filter(owner=admin).annotate(rating=Avg('userbookrelation__rate'),
                                                       likes=Count('userbookrelation__like')
-                                                      ).order_by('-likes')[:3]
+                                                      ).order_by('-likes')
 
-    serializer = AdminDashboardSerializer(books, many=True)
+    # serializer = AdminDashboardSerializer(books, many=True, context={'request': request})
+    # return Response(serializer.data, status=status.HTTP_200_OK)
 
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    paginator = PageNumberPagination()
+    paginator.page_size = 10
+    result_page = paginator.paginate_queryset(books, request)
+    serializer = AdminDashboardSerializer(result_page, many=True, context={'request': request})
+    return paginator.get_paginated_response(serializer.data)
 
