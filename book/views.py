@@ -13,13 +13,11 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import UpdateModelMixin, DestroyModelMixin, RetrieveModelMixin, CreateModelMixin
-
 from user.models import CustomUser
 from .custompermissions import IsAdminOrReadOnly
 from .models import Book
 from .serializers import *
 from .custompaginations import CustomPagination
-# from ninja.pagination import paginate, LimitOffsetPagination, PageNumberPagination
 
 
 # class CategoryUpdateAPIView(UpdateAPIView):
@@ -27,6 +25,10 @@ from .custompaginations import CustomPagination
 #     queryset = Category.objects.all()
 #     lookup_field = 'url'
 #     permission_classes = [IsAdminUser, ]
+
+# class CategoryDetailAPIView(RetrieveUpdateDestroyAPIView):
+#     queryset = Category.objects.all()
+#     serializer_class = CategoryCreateSerializer
 
 
 class CategoryCreateView(GenericAPIView):
@@ -41,18 +43,41 @@ class CategoryCreateView(GenericAPIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def get(self, request, *args, **kwargs):
+        url = kwargs.get('url', None)
+        if not url:
+            return Response({'error': 'Method GET is not allowed'})
+        try:
+            category = Category.objects.get(url=url)
+        except:
+            return Response({'error': 'Object does not exists'})
+        serializer = CategoryCreateSerializer(category, many=False)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     def put(self, request, *args, **kwargs):
         url = kwargs.get('url', None)
         if not url:
             return Response({'error': 'Method PUT is not allowed'})
         try:
-            book = Category.objects.get(url=url)
+            category = Category.objects.get(url=url)
         except:
             return Response({'error': 'Object does not exists'})
-        serializer = self.serializer_class(book, data=request.data)
+        serializer = self.serializer_class(category, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, *args, **kwargs):
+        url = kwargs.get('url', None)
+        if not url:
+            return Response({'error': 'Method Delete is not allowed'})
+        try:
+            category = Category.objects.get(url=url)
+        except:
+            return Response({'error': 'Object does not exists'})
+
+        category.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class BookCreateView(GenericAPIView):
@@ -110,9 +135,9 @@ class BookDetailView(RetrieveUpdateDestroyAPIView):
             return BookAdminDetailSerializer
         return BookDetailSerializer
     
-    def retrieve(self, request, *args, **kwargs):
-        print('something')
-        return super().retrieve(request, *args, **kwargs)
+    # def retrieve(self, request, *args, **kwargs):
+    #     print('something')
+    #     return super().retrieve(request, *args, **kwargs)
 
 
 class UserBookRateAPIView(RetrieveModelMixin,
@@ -182,8 +207,6 @@ def admin_dashboard(request):
 
 @api_view(['GET'])
 @permission_classes([IsAdminUser, ])
-# @pagination_classes(CustomPagination)
-# @paginate(PageNumberPagination, page_size=2)
 def admin_detail(request, pk, self=None):
     try:
         admin = CustomUser.objects.filter(Q(is_superuser=True) | Q(is_staff=True)).get(pk=pk)

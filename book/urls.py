@@ -18,7 +18,7 @@ urlpatterns = [
     # path('user-rate/<int:id>/', UserBookRateAPIView.as_view({'get': 'retrieve'}), name='rate-retrieve'),
     # path('user-rate/<int:id>/', UserBookRateAPIView.as_view({'put': 'update'}), name='rate-update'),
     # path('user-rate/<int:id>/', UserBookRateAPIView.as_view({'delete': 'destroy'}), name='rate-delete'),
-    path('<slug:url>/', BookDetailView.as_view(), name='detail'),
+    path('detail/<slug:url>/', BookDetailView.as_view(), name='detail'),
 
 ]
 
