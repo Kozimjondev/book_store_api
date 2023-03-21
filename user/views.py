@@ -1,10 +1,8 @@
 from django.contrib.auth import authenticate, login, logout
 from rest_framework import status
-from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
 from .models import CustomUser
 from .utils import get_tokens_for_user
 from .serializers import RegistrationSerializer, PasswordChangeSerializer
@@ -50,8 +48,6 @@ class ChangePasswordView(APIView):
         return Response({'msg': 'Successfully Changed'}, status=status.HTTP_204_NO_CONTENT)
 
 
-# class UserListView(ListAPIView):
-#     queryset = CustomUser.objects.all()
 
 
 

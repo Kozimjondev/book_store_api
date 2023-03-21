@@ -40,6 +40,8 @@ class CustomUser(AbstractUser):
     last_name = models.CharField(verbose_name='Last Name', max_length=250)
     password = models.CharField(max_length=200)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    money = models.DecimalField(default=0, decimal_places=2, max_digits=19)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ('phone_number',)

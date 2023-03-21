@@ -134,7 +134,7 @@ class BookDetailView(RetrieveUpdateDestroyAPIView):
         if self.request.user.is_superuser:
             return BookAdminDetailSerializer
         return BookDetailSerializer
-    
+
     # def retrieve(self, request, *args, **kwargs):
     #     print('something')
     #     return super().retrieve(request, *args, **kwargs)
@@ -177,7 +177,6 @@ def pageNotFound(request, exception):
 @api_view(['GET'])
 @permission_classes([IsAdminUser, ])
 def admin_dashboard(request):
-
     # A list of admins
     admins = CustomUser.objects.filter(Q(is_superuser=True) | Q(is_staff=True)).values_list('email', flat=True)
 
@@ -186,11 +185,13 @@ def admin_dashboard(request):
 
     # the best ten ranked books by users
     books = Book.objects.all().annotate(rating=Avg('userbookrelation__rate'),
-            ).select_related('owner').values('name', 'owner__email', 'rating').order_by('-rating')[:10]
+                                        ).select_related('owner').values('name', 'owner__email', 'rating').order_by(
+        '-rating')[:10]
 
     # the best ten liked books by users
     liked_books = Book.objects.all().annotate(likes=Count('userbookrelation__like'),
-            ).select_related('owner').values('name', 'owner__email', 'likes').order_by('-likes')[:10]
+                                              ).select_related('owner').values('name', 'owner__email',
+                                                                               'likes').order_by('-likes')[:10]
 
     # ten the most expensive books
     expensive_books = Book.objects.all().values('name', 'owner__email', 'price').order_by('-price')
@@ -226,3 +227,18 @@ def admin_detail(request, pk, self=None):
     serializer = AdminDashboardSerializer(result_page, many=True, context={'request': request})
     return paginator.get_paginated_response(serializer.data)
 
+
+class UserBuyBookView(RetrieveUpdateDestroyAPIView):
+    # queryset = UserBuyBook.objects.all()
+    serializer_class = UserBuyBookSerializer
+    lookup_field = 'book__url'
+    permission_classes = [IsAuthenticated, ]
+
+    def get_object(self):
+        try:
+            book = Book.objects.get(url=self.kwargs['book__url'])
+        except:
+            return Http404()
+        obj, _ = UserBuyBook.objects.get_or_create(user=self.request.user,
+                                                   book=book)
+        return obj

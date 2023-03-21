@@ -19,6 +19,8 @@ urlpatterns = [
     # path('user-rate/<int:id>/', UserBookRateAPIView.as_view({'put': 'update'}), name='rate-update'),
     # path('user-rate/<int:id>/', UserBookRateAPIView.as_view({'delete': 'destroy'}), name='rate-delete'),
     path('detail/<slug:url>/', BookDetailView.as_view(), name='detail'),
+    path('buy/<slug:book__url>/', UserBuyBookView.as_view(), name='buy'),
+    # path('buy/<slug:book__url>/', UserBuyBookView.as_view({'put': 'update'}), name='buy'),
 
 ]
 

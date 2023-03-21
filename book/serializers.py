@@ -1,6 +1,6 @@
 from django.db.models import Avg
 
-from .models import Book, Category, UserBookRelation
+from .models import Book, Category, UserBookRelation, UserBuyBook
 from rest_framework import serializers
 
 
@@ -50,7 +50,7 @@ class BookCreateSerializer(serializers.ModelSerializer):
 
 
 class BookDetailSerializer(serializers.ModelSerializer):
-    category = serializers.SlugRelatedField(slug_field='name', read_only=True,)
+    category = serializers.SlugRelatedField(slug_field='name', read_only=True, )
     likes_count = serializers.SerializerMethodField()
     rating = serializers.DecimalField(max_digits=3, decimal_places=2, read_only=True)
 
@@ -64,7 +64,7 @@ class BookDetailSerializer(serializers.ModelSerializer):
 
 class BookAdminDetailSerializer(serializers.ModelSerializer):
     owner = serializers.StringRelatedField(read_only=True)
-    category = serializers.SlugRelatedField(slug_field='name', read_only=True,)
+    category = serializers.SlugRelatedField(slug_field='name', read_only=True, )
     readers = serializers.SlugRelatedField(slug_field='email', read_only=True, many=True)
     likes_count = serializers.SerializerMethodField()
     rating = serializers.DecimalField(max_digits=3, decimal_places=2, read_only=True)
@@ -84,7 +84,7 @@ class UserBookRelationSerializer(serializers.ModelSerializer):
         model = UserBookRelation
         fields = ('user', 'book', 'like', 'rate', 'in_bookmarks')
         lookup_field = 'book__url'
-        read_only_fields = ('book', )
+        read_only_fields = ('book',)
 
 
 class AdminDashboardSerializer(serializers.ModelSerializer):
@@ -105,3 +105,15 @@ class AdminDashboardSerializer(serializers.ModelSerializer):
     #     representation['owner__rate'] = instance.rate.Avg()
     #
     #     return representation
+
+
+class UserBuyBookSerializer(serializers.ModelSerializer):
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    book = serializers.SlugRelatedField(slug_field='name', read_only=True)
+
+    class Meta:
+        model = UserBuyBook
+        fields = ['is_bought', 'user', 'book']
+        read_only_fields = ('book',)
+        lookup_field = 'book__url'
+

@@ -1,8 +1,10 @@
 from django.db import models
-from django.db.models.signals import post_save
+from django.db.models import When, Case
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.urls import reverse
 from django.template.defaultfilters import slugify
+from rest_framework.exceptions import ValidationError
 from user.models import CustomUser
 
 
@@ -36,6 +38,7 @@ class Book(models.Model):
     category = models.ForeignKey(Category, on_delete=models.PROTECT, null=True, related_name='category')
     readers = models.ManyToManyField(CustomUser, through='UserBookRelation', related_name='readers')
     # count_book = models.PositiveIntegerField(editable=False, default=0)
+    collected_money = models.DecimalField(default=0, decimal_places=2, max_digits=19, editable=False)
 
     def __str__(self):
         return self.name
@@ -63,11 +66,38 @@ class UserBookRelation(models.Model):
     like = models.BooleanField(default=False)
     in_bookmarks = models.BooleanField(default=False)
     rate = models.PositiveSmallIntegerField(choices=RATE_CHOICES, null=True)
+    # buy = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user}: {self.book}, rate: {self.rate}"
 
 
-# @receiver(post_save, sender=Book)
-# def book_count(sender,instance,created,**kwargs):
-#     if created:
+class UserBuyBook(models.Model):
+    is_bought = models.BooleanField(default=False)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    book = models.ForeignKey(Book, on_delete=models.CASCADE)
+
+    def name(self):
+        return f"{self.user} bought {self.book.name}"
+
+
+@receiver(pre_save, sender=UserBuyBook)
+def book_buy(sender, instance, **kwargs):
+    # not_liked = UserBuyBook.objects.annotate(Case(When(is_bought=False, then=True)))
+    # is_liked = UserBuyBook.objects.annotate(Case(When(is_bought=True, then=True)))
+    if not instance.pk:
+        if instance.is_bought == True:
+            if instance.user.money >= instance.book.price:
+                print(instance.user.money)
+                print(instance.book.price)
+                instance.book.collected_money += instance.book.price
+                print(instance.book.collected_money)
+                instance.book.save()
+                instance.user.money -= instance.book.price
+                print(instance.user.money)
+                instance.user.save()
+            else:
+                raise ValidationError("You don't have enough money to buy this book!")
+        else:
+            raise ValidationError("You can not buy this book!")
+
