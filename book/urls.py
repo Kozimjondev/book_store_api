@@ -5,6 +5,7 @@ from .views import *
 
 router = DefaultRouter()
 router.register(r'user-rate', UserBookRateAPIView)
+# router.register(r'buy', UserBuyBookView, basename='buy')
 
 urlpatterns = [
     path('', BookListView.as_view(), name='book'),
@@ -21,6 +22,7 @@ urlpatterns = [
     path('detail/<slug:url>/', BookDetailView.as_view(), name='detail'),
     path('buy/<slug:book__url>/', UserBuyBookView.as_view(), name='buy'),
     # path('buy/<slug:book__url>/', UserBuyBookView.as_view({'put': 'update'}), name='buy'),
+    # path('buy/<slug:book__url>/', UserBuyBookView.as_view({'post': 'create'}), name='buy'),
 
 ]
 

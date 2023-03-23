@@ -86,18 +86,19 @@ def book_buy(sender, instance, **kwargs):
     # not_liked = UserBuyBook.objects.annotate(Case(When(is_bought=False, then=True)))
     # is_liked = UserBuyBook.objects.annotate(Case(When(is_bought=True, then=True)))
     if not instance.pk:
-        if instance.is_bought == True:
+        if instance.is_bought == False:
             if instance.user.money >= instance.book.price:
-                print(instance.user.money)
-                print(instance.book.price)
+                instance.is_bought = True
+                # print(instance.user.money)
+                # print(instance.book.price)
                 instance.book.collected_money += instance.book.price
-                print(instance.book.collected_money)
+                # print(instance.book.collected_money)
                 instance.book.save()
                 instance.user.money -= instance.book.price
-                print(instance.user.money)
+                # print(instance.user.money)
                 instance.user.save()
             else:
                 raise ValidationError("You don't have enough money to buy this book!")
         else:
-            raise ValidationError("You can not buy this book!")
+            raise ValidationError("You have already bought this book!")
 
