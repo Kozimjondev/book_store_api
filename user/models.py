@@ -41,7 +41,7 @@ class CustomUser(AbstractUser):
     password = models.CharField(max_length=200)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    money = models.DecimalField(default=0, decimal_places=2, max_digits=19)
+    money = models.DecimalField(decimal_places=2, max_digits=19, default=0)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ('phone_number',)
